@@ -5,8 +5,6 @@ import "./DataTable.css";
 const DataTable = () => {
   const [employees, setEmployees] = useState([]);
   const [newEmployee, setNewEmployee] = useState({ name: "", position: "", salary: "" });
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [deletedEmployees, setDeletedEmployees] = useState([]);
   const [createRows, setCreateRows] = useState([]);
   const [updateRows, setUpdateRows] = useState([]);
   const [deleteRows, setDeleteRows] = useState([]);
@@ -31,9 +29,16 @@ const DataTable = () => {
     setNewEmployee({ ...newEmployee, [name]: value });
   };
 
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditingEmployee({ ...editingEmployee, [name]: value });
+  const handleCellChange = (id, name, value) => {
+    const updatedEmployees = employees.map((employee) => (employee.id === id ? { ...employee, [name]: value } : employee));
+    setEmployees(updatedEmployees);
+    if (!updateRows.some((emp) => emp.id === id)) {
+      const updatedEmployee = updatedEmployees.find((emp) => emp.id === id);
+      setUpdateRows([...updateRows, updatedEmployee]);
+    } else {
+      const updatedEmployee = updatedEmployees.find((emp) => emp.id === id);
+      setUpdateRows(updateRows.map((emp) => (emp.id === id ? updatedEmployee : emp)));
+    }
   };
 
   const handleCreate = () => {
@@ -43,25 +48,14 @@ const DataTable = () => {
     setNewEmployee({ name: "", position: "", salary: "" });
   };
 
-  const handleUpdate = (employee) => {
-    setEditingEmployee(employee);
-  };
-
-  const handleSaveUpdate = () => {
-    setEmployees(employees.map((emp) => (emp.id === editingEmployee.id ? editingEmployee : emp)));
-    setUpdateRows([...updateRows, editingEmployee]);
-    setEditingEmployee(null);
-  };
-
   const handleDelete = (id) => {
-    setDeletedEmployees([...deletedEmployees, id]);
     setDeleteRows([...deleteRows, id]);
     setEmployees(employees.filter((emp) => emp.id !== id));
   };
 
   const handleSaveAll = async () => {
     if (createRows.length === 0 && updateRows.length === 0 && deleteRows.length === 0) {
-      alert("Perubahan belum tersimpan.");
+      alert("No changes to save.");
       return;
     }
 
@@ -77,7 +71,7 @@ const DataTable = () => {
       setCreateRows([]);
       setUpdateRows([]);
       setDeleteRows([]);
-      alert("Data berhasil diupdate.");
+      alert("Data updated successfully.");
     } catch (error) {
       if (error.response) {
         console.error("Error response data:", error.response.data);
@@ -104,11 +98,16 @@ const DataTable = () => {
         <tbody>
           {employees.map((employee) => (
             <tr key={employee.id}>
-              <td>{editingEmployee && editingEmployee.id === employee.id ? <input type="text" name="name" value={editingEmployee.name} onChange={handleEditInputChange} /> : employee.name}</td>
-              <td>{editingEmployee && editingEmployee.id === employee.id ? <input type="text" name="position" value={editingEmployee.position} onChange={handleEditInputChange} /> : employee.position}</td>
-              <td>{editingEmployee && editingEmployee.id === employee.id ? <input type="text" name="salary" value={editingEmployee.salary} onChange={handleEditInputChange} /> : employee.salary}</td>
               <td>
-                {editingEmployee && editingEmployee.id === employee.id ? <button onClick={handleSaveUpdate}>Save</button> : <button onClick={() => handleUpdate(employee)}>Edit</button>}
+                <input type="text" value={employee.name} onChange={(e) => handleCellChange(employee.id, "name", e.target.value)} />
+              </td>
+              <td>
+                <input type="text" value={employee.position} onChange={(e) => handleCellChange(employee.id, "position", e.target.value)} />
+              </td>
+              <td>
+                <input type="text" value={employee.salary} onChange={(e) => handleCellChange(employee.id, "salary", e.target.value)} />
+              </td>
+              <td>
                 <button onClick={() => handleDelete(employee.id)}>Delete</button>
               </td>
             </tr>
