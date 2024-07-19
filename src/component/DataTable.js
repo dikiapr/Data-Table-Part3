@@ -20,7 +20,7 @@ const DataTable = () => {
   }, [createRows, updateRows, deleteRows]);
 
   useEffect(() => {
-    if (newEmployees.length > 0 && (newEmployees[0].name || newEmployees[0].position || newEmployees[0].salary)) {
+    if (newEmployees.length > 0 && newEmployees.some((emp) => emp.name || emp.position || emp.salary)) {
       setCreateRows(newEmployees);
     } else {
       setCreateRows([]);
@@ -55,9 +55,13 @@ const DataTable = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    setDeleteRows([...deleteRows, id]);
-    setEmployees(employees.filter((emp) => emp.id !== id));
+  const handleDelete = (id, isNew = false) => {
+    if (isNew) {
+      setNewEmployees(newEmployees.filter((_, index) => index !== id));
+    } else {
+      setDeleteRows([...deleteRows, id]);
+      setEmployees(employees.filter((emp) => emp.id !== id));
+    }
   };
 
   const handleSaveAll = async () => {
@@ -132,11 +136,14 @@ const DataTable = () => {
               <td>
                 <input type="text" name="salary" value={newEmployee.salary} onChange={(e) => handleInputChange(index, e)} />
               </td>
-              <td>{index === newEmployees.length - 1 && <button onClick={handleAddNewRow}>Add</button>}</td>
+              <td>
+                <button onClick={() => handleDelete(index, true)}>Delete</button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      <button onClick={handleAddNewRow}>Add Row</button>
       <button onClick={handleSaveAll}>Save All</button>
     </div>
   );
