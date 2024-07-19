@@ -4,7 +4,7 @@ import "./DataTable.css";
 
 const DataTable = () => {
   const [employees, setEmployees] = useState([]);
-  const [newEmployee, setNewEmployee] = useState({ name: "", position: "", salary: "" });
+  const [newEmployees, setNewEmployees] = useState([{ name: "", position: "", salary: "" }]);
   const [createRows, setCreateRows] = useState([]);
   const [updateRows, setUpdateRows] = useState([]);
   const [deleteRows, setDeleteRows] = useState([]);
@@ -20,22 +20,27 @@ const DataTable = () => {
   }, [createRows, updateRows, deleteRows]);
 
   useEffect(() => {
-    if (newEmployee.name || newEmployee.position || newEmployee.salary) {
-      const newEmpWithId = { ...newEmployee, id: Date.now() };
-      setCreateRows([newEmpWithId]);
+    if (newEmployees.length > 0 && (newEmployees[0].name || newEmployees[0].position || newEmployees[0].salary)) {
+      setCreateRows(newEmployees);
     } else {
       setCreateRows([]);
     }
-  }, [newEmployee]);
+  }, [newEmployees]);
 
   const fetchEmployees = async () => {
     const response = await axios.get("/api/employees");
     setEmployees(response.data);
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (index, e) => {
     const { name, value } = e.target;
-    setNewEmployee({ ...newEmployee, [name]: value });
+    const updatedNewEmployees = [...newEmployees];
+    updatedNewEmployees[index][name] = value;
+    setNewEmployees(updatedNewEmployees);
+  };
+
+  const handleAddNewRow = () => {
+    setNewEmployees([...newEmployees, { name: "", position: "", salary: "" }]);
   };
 
   const handleCellChange = (id, name, value) => {
@@ -50,20 +55,13 @@ const DataTable = () => {
     }
   };
 
-  const handleCreate = () => {
-    const newEmp = { ...newEmployee, id: Date.now() };
-    setEmployees([...employees, newEmp]);
-    setCreateRows([...createRows, newEmp]);
-    setNewEmployee({ name: "", position: "", salary: "" });
-  };
-
   const handleDelete = (id) => {
     setDeleteRows([...deleteRows, id]);
     setEmployees(employees.filter((emp) => emp.id !== id));
   };
 
   const handleSaveAll = async () => {
-    const hasNewEmployee = newEmployee.name || newEmployee.position || newEmployee.salary;
+    const hasNewEmployee = newEmployees.some((emp) => emp.name || emp.position || emp.salary);
     if (!hasNewEmployee && createRows.length === 0 && updateRows.length === 0 && deleteRows.length === 0) {
       alert("No changes to save.");
       return;
@@ -71,14 +69,14 @@ const DataTable = () => {
 
     try {
       const bulkRequest = {
-        create: hasNewEmployee ? [newEmployee] : createRows,
+        create: hasNewEmployee ? newEmployees : createRows,
         update: updateRows,
         delete: deleteRows,
       };
       const response = await axios.post("/api/employees/bulk", bulkRequest);
       console.log(response.data);
       fetchEmployees();
-      setNewEmployee({ name: "", position: "", salary: "" });
+      setNewEmployees([{ name: "", position: "", salary: "" }]);
       setCreateRows([]);
       setUpdateRows([]);
       setDeleteRows([]);
@@ -123,20 +121,20 @@ const DataTable = () => {
               </td>
             </tr>
           ))}
-          <tr>
-            <td>
-              <input type="text" name="name" value={newEmployee.name} onChange={handleInputChange} />
-            </td>
-            <td>
-              <input type="text" name="position" value={newEmployee.position} onChange={handleInputChange} />
-            </td>
-            <td>
-              <input type="text" name="salary" value={newEmployee.salary} onChange={handleInputChange} />
-            </td>
-            <td>
-              <button onClick={handleCreate}>Add</button>
-            </td>
-          </tr>
+          {newEmployees.map((newEmployee, index) => (
+            <tr key={`new-${index}`}>
+              <td>
+                <input type="text" name="name" value={newEmployee.name} onChange={(e) => handleInputChange(index, e)} />
+              </td>
+              <td>
+                <input type="text" name="position" value={newEmployee.position} onChange={(e) => handleInputChange(index, e)} />
+              </td>
+              <td>
+                <input type="text" name="salary" value={newEmployee.salary} onChange={(e) => handleInputChange(index, e)} />
+              </td>
+              <td>{index === newEmployees.length - 1 && <button onClick={handleAddNewRow}>Add</button>}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
       <button onClick={handleSaveAll}>Save All</button>
