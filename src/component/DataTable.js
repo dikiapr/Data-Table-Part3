@@ -19,6 +19,15 @@ const DataTable = () => {
     console.log("Delete Rows:", deleteRows);
   }, [createRows, updateRows, deleteRows]);
 
+  useEffect(() => {
+    if (newEmployee.name || newEmployee.position || newEmployee.salary) {
+      const newEmpWithId = { ...newEmployee, id: Date.now() };
+      setCreateRows([newEmpWithId]);
+    } else {
+      setCreateRows([]);
+    }
+  }, [newEmployee]);
+
   const fetchEmployees = async () => {
     const response = await axios.get("/api/employees");
     setEmployees(response.data);
@@ -54,20 +63,22 @@ const DataTable = () => {
   };
 
   const handleSaveAll = async () => {
-    if (createRows.length === 0 && updateRows.length === 0 && deleteRows.length === 0) {
+    const hasNewEmployee = newEmployee.name || newEmployee.position || newEmployee.salary;
+    if (!hasNewEmployee && createRows.length === 0 && updateRows.length === 0 && deleteRows.length === 0) {
       alert("No changes to save.");
       return;
     }
 
     try {
       const bulkRequest = {
-        create: createRows,
+        create: hasNewEmployee ? [newEmployee] : createRows,
         update: updateRows,
         delete: deleteRows,
       };
       const response = await axios.post("/api/employees/bulk", bulkRequest);
       console.log(response.data);
       fetchEmployees();
+      setNewEmployee({ name: "", position: "", salary: "" });
       setCreateRows([]);
       setUpdateRows([]);
       setDeleteRows([]);
