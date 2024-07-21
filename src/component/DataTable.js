@@ -20,12 +20,20 @@ const DataTable = () => {
   }, [createRows, updateRows, deleteRows]);
 
   useEffect(() => {
-    if (newEmployees.length > 0 && newEmployees.some((emp) => emp.name || emp.position || emp.salary)) {
+    if (newEmployees.length > 0 && (newEmployees[0].name || newEmployees[0].position || newEmployees[0].salary)) {
       setCreateRows(newEmployees);
     } else {
       setCreateRows([]);
     }
   }, [newEmployees]);
+
+  useEffect(() => {
+    const autosave = setInterval(() => {
+      handleSaveAll();
+    }, 5000);
+
+    return () => clearInterval(autosave);
+  }, [newEmployees, employees, createRows, updateRows, deleteRows]);
 
   const fetchEmployees = async () => {
     const response = await axios.get("/api/employees");
@@ -55,19 +63,15 @@ const DataTable = () => {
     }
   };
 
-  const handleDelete = (id, isNew = false) => {
-    if (isNew) {
-      setNewEmployees(newEmployees.filter((_, index) => index !== id));
-    } else {
-      setDeleteRows([...deleteRows, id]);
-      setEmployees(employees.filter((emp) => emp.id !== id));
-    }
+  const handleDelete = (id) => {
+    setDeleteRows([...deleteRows, id]);
+    setEmployees(employees.filter((emp) => emp.id !== id));
   };
 
   const handleSaveAll = async () => {
     const hasNewEmployee = newEmployees.some((emp) => emp.name || emp.position || emp.salary);
     if (!hasNewEmployee && createRows.length === 0 && updateRows.length === 0 && deleteRows.length === 0) {
-      alert("No changes to save.");
+      console.log("No changes to save.");
       return;
     }
 
@@ -84,14 +88,12 @@ const DataTable = () => {
       setCreateRows([]);
       setUpdateRows([]);
       setDeleteRows([]);
-      alert("Data updated successfully.");
+      console.log("Data updated successfully.");
     } catch (error) {
       if (error.response) {
         console.error("Error response data:", error.response.data);
-        alert(`Error: ${error.response.data.message || "Something went wrong"}`);
       } else {
         console.error("Error:", error.message);
-        alert(`Error: ${error.message}`);
       }
     }
   };
@@ -136,14 +138,11 @@ const DataTable = () => {
               <td>
                 <input type="text" name="salary" value={newEmployee.salary} onChange={(e) => handleInputChange(index, e)} />
               </td>
-              <td>
-                <button onClick={() => handleDelete(index, true)}>Delete</button>
-              </td>
+              <td>{index === newEmployees.length - 1 && <button onClick={handleAddNewRow}>Add</button>}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button onClick={handleAddNewRow}>Add Row</button>
       <button onClick={handleSaveAll}>Save All</button>
     </div>
   );
